@@ -36,6 +36,36 @@ const Navbar = () => {
           </div>
         </Link>
 
+        <div className="hidden items-center gap-1 rounded-full border border-black/10 bg-white/70 px-1 py-1 shadow-sm md:flex">
+          {isAuthenticated ? (
+            <>
+              <Link
+                to="/"
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  isActive("/")
+                    ? "bg-black text-white shadow-md"
+                    : "text-black/60 hover:bg-black/5"
+                }`}
+              >
+                <FaHome className="text-base" />
+                <span>Pulse</span>
+              </Link>
+              <Link
+                to="/profile"
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  isActive("/profile")
+                    ? "bg-black text-white shadow-md"
+                    : "text-black/60 hover:bg-black/5"
+                }`}
+              >
+                <FaUser className="text-base" />
+                <span>Profile</span>
+              </Link>
+            </>
+          ) : (
+            <></>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           {isAuthenticated ? (
