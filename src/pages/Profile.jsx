@@ -50,9 +50,9 @@ const Profile = () => {
                   </div>
                   <span className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-4 border-white bg-emerald-400" />
                 </div>
-                <div className="pb-4">
+                <div className="relative z-10 pb-4 bg-white px-4 py-2 rounded-2xl shadow-sm">
                   <h1 className="text-3xl font-extrabold text-black">{userName}</h1>
-                  <p className="text-sm font-semibold uppercase tracking-[0.35em] text-black/40">Building in public</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.35em] text-black/50">Building in public</p>
                 </div>
               </div>
               <button className="inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:bg-black/90">

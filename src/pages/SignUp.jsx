@@ -8,12 +8,47 @@ const SignUp = () => {
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const navigate = useNavigate();
+
+  // Calculate password strength
+  const calculatePasswordStrength = (password) => {
+    if (!password) return { strength: 0, label: '', color: '' };
+    
+    let strength = 0;
+    const checks = {
+      length: password.length >= 8,
+      hasLower: /[a-z]/.test(password),
+      hasUpper: /[A-Z]/.test(password),
+      hasNumber: /\d/.test(password),
+      hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    };
+
+    // Calculate strength score
+    if (checks.length) strength += 20;
+    if (checks.hasLower) strength += 20;
+    if (checks.hasUpper) strength += 20;
+    if (checks.hasNumber) strength += 20;
+    if (checks.hasSpecial) strength += 20;
+
+    // Determine label and color
+    if (strength <= 40) {
+      return { strength, label: 'Weak', color: 'bg-red-500', textColor: 'text-red-600' };
+    } else if (strength <= 60) {
+      return { strength, label: 'Fair', color: 'bg-yellow-500', textColor: 'text-yellow-600' };
+    } else if (strength <= 80) {
+      return { strength, label: 'Good', color: 'bg-blue-500', textColor: 'text-blue-600' };
+    } else {
+      return { strength, label: 'Strong', color: 'bg-green-500', textColor: 'text-green-600' };
+    }
+  };
+
+  const passwordStrength = calculatePasswordStrength(formData.password);
 
   const handleChange = (e) => {
     setFormData({
@@ -26,7 +61,7 @@ const SignUp = () => {
     e.preventDefault();
     setError('');
     
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
       setError('All fields are required');
       return;
     }
@@ -36,9 +71,16 @@ const SignUp = () => {
       return;
     }
 
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await signUp(formData);
+      // Remove confirmPassword before sending to API
+      const { confirmPassword, ...signUpData } = formData;
+      const response = await signUp(signUpData);
       
       if (response.success) {
         setSuccess(true);
@@ -168,6 +210,65 @@ const SignUp = () => {
                     onChange={handleChange}
                     className="w-full rounded-2xl border border-black/10 bg-white px-11 py-3 text-sm font-semibold text-black/80 transition focus:border-orange-400 focus:shadow-[0_0_0_4px_rgba(255,107,44,0.18)]"
                     placeholder="Minimum 6 characters"
+                    autoComplete='off'
+                  />
+                </div>
+                
+                {/* Password Strength Indicator */}
+                {formData.password && (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-black/50">Password Strength:</span>
+                      <span className={`text-xs font-bold ${passwordStrength.textColor}`}>
+                        {passwordStrength.label}
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-black/5">
+                      <div
+                        className={`h-full transition-all duration-300 ${passwordStrength.color}`}
+                        style={{ width: `${passwordStrength.strength}%` }}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className={`flex items-center gap-1 ${formData.password.length >= 8 ? 'text-green-600' : 'text-black/40'}`}>
+                        <span>{formData.password.length >= 8 ? '✓' : '○'}</span>
+                        <span>8+ characters</span>
+                      </div>
+                      <div className={`flex items-center gap-1 ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-black/40'}`}>
+                        <span>{/[A-Z]/.test(formData.password) ? '✓' : '○'}</span>
+                        <span>Uppercase</span>
+                      </div>
+                      <div className={`flex items-center gap-1 ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-black/40'}`}>
+                        <span>{/[a-z]/.test(formData.password) ? '✓' : '○'}</span>
+                        <span>Lowercase</span>
+                      </div>
+                      <div className={`flex items-center gap-1 ${/\d/.test(formData.password) ? 'text-green-600' : 'text-black/40'}`}>
+                        <span>{/\d/.test(formData.password) ? '✓' : '○'}</span>
+                        <span>Number</span>
+                      </div>
+                      <div className={`flex items-center gap-1 ${/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? 'text-green-600' : 'text-black/40'}`}>
+                        <span>{/[!@#$%^&*(),.?":{}|<>]/.test(formData.password) ? '✓' : '○'}</span>
+                        <span>Special char</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.25em] text-black/40">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <FaLock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="w-full rounded-2xl border border-black/10 bg-white px-11 py-3 text-sm font-semibold text-black/80 transition focus:border-orange-400 focus:shadow-[0_0_0_4px_rgba(255,107,44,0.18)]"
+                    placeholder="Re-enter your password"
+                    autoComplete='off'
                   />
                 </div>
               </div>
