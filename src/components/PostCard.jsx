@@ -203,11 +203,9 @@ const PostCard = ({ post, isMyPost = false }) => {
   const handleShare = async () => {
     requireAuth(async () => {
       try {
-        // Copy link to clipboard
         const postUrl = `${window.location.origin}/post/${post._id}`;
         await navigator.clipboard.writeText(postUrl);
 
-        // Increment share count
         const response = await sharePostAPI(post._id);
         if (response.success) {
           setLocalSharesCount(response.sharesCount);
