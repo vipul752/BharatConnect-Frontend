@@ -7,13 +7,24 @@ const postsSlice = createSlice({
     myPosts: [],
     loading: false,
     error: null,
+    nextCursor: null,
+    hasMore: true,
   },
   reducers: {
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
     setPosts: (state, action) => {
-      state.posts = action.payload;
+      state.posts = action.payload.posts || action.payload;
+      state.nextCursor = action.payload.nextCursor || null;
+      state.hasMore = action.payload.hasMore !== undefined ? action.payload.hasMore : false;
+      state.loading = false;
+      state.error = null;
+    },
+    appendPosts: (state, action) => {
+      state.posts = [...state.posts, ...(action.payload.posts || [])];
+      state.nextCursor = action.payload.nextCursor || null;
+      state.hasMore = action.payload.hasMore !== undefined ? action.payload.hasMore : false;
       state.loading = false;
       state.error = null;
     },
@@ -39,6 +50,17 @@ const postsSlice = createSlice({
       state.posts = state.posts.filter(post => post._id !== action.payload);
       state.myPosts = state.myPosts.filter(post => post._id !== action.payload);
     },
+    updatePostInteraction: (state, action) => {
+      const { postId, updates } = action.payload;
+      const index = state.posts.findIndex(post => post._id === postId);
+      if (index !== -1) {
+        state.posts[index] = { ...state.posts[index], ...updates };
+      }
+      const myIndex = state.myPosts.findIndex(post => post._id === postId);
+      if (myIndex !== -1) {
+        state.myPosts[myIndex] = { ...state.myPosts[myIndex], ...updates };
+      }
+    },
     setError: (state, action) => {
       state.error = action.payload;
       state.loading = false;
@@ -46,5 +68,5 @@ const postsSlice = createSlice({
   },
 });
 
-export const { setLoading, setPosts, setMyPosts, addPost, updatePost, deletePost, setError } = postsSlice.actions;
+export const { setLoading, setPosts, appendPosts, setMyPosts, addPost, updatePost, deletePost, updatePostInteraction, setError } = postsSlice.actions;
 export default postsSlice.reducer;

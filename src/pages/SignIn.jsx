@@ -102,10 +102,10 @@ const SignIn = () => {
                   BharatConnect
                 </span>
                 <h1 className="mt-6 text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
-                  Where India\'s builders accelerate together.
+                  Where India's builders accelerate together.
                 </h1>
                 <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600">
-                  Swap learnings, surface new opportunities, and build in public with peers who understand what it takes to shape Bharat\'s next decade.
+                  Swap learnings, surface new opportunities, and build in public with peers who understand what it takes to shape Bharat's next decade.
                 </p>
               </div>
 

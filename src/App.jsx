@@ -21,14 +21,7 @@ const App = () => {
           path="/sign-up" 
           element={isAuthenticated ? <Navigate to="/" replace /> : <SignUp />} 
         />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<Home />} />
         <Route
           path="/profile"
           element={

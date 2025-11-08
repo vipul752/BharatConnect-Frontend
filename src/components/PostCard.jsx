@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { deletePost as deletePostAPI, updatePost as updatePostAPI } from '../utils/api';
-import { deletePost, updatePost } from '../store/postsSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { deletePost as deletePostAPI, updatePost as updatePostAPI, likePost as likePostAPI, commentPost as commentPostAPI, savePost as savePostAPI, sharePost as sharePostAPI } from '../utils/api';
+import { deletePost, updatePost, updatePostInteraction } from '../store/postsSlice';
 import { FaComment, FaShare, FaEllipsisH, FaEdit, FaTrash, FaHeart, FaBookmark } from 'react-icons/fa';
 
 const PostCard = ({ post, isMyPost = false }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
   const [editData, setEditData] = useState({
     title: post.title,
     content: post.content,
@@ -14,8 +17,14 @@ const PostCard = ({ post, isMyPost = false }) => {
   const [loading, setLoading] = useState(false);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [localLikesCount, setLocalLikesCount] = useState(post.likesCount || 0);
+  const [localCommentsCount, setLocalCommentsCount] = useState(post.commentsCount || 0);
+  const [localSharesCount, setLocalSharesCount] = useState(post.sharesCount || 0);
+  const [localComments, setLocalComments] = useState(post.comments || []);
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
 
   const formatDate = (date) => {
     const postDate = new Date(date);
@@ -31,6 +40,16 @@ const PostCard = ({ post, isMyPost = false }) => {
     
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return postDate.toLocaleDateString(undefined, options);
+  };
+
+  const requireAuth = (callback) => {
+    if (!isAuthenticated) {
+      if (window.confirm('Please sign in to interact with posts. Go to sign in page?')) {
+        navigate('/sign-in');
+      }
+      return;
+    }
+    callback();
   };
 
   const handleDelete = async () => {
@@ -70,6 +89,111 @@ const PostCard = ({ post, isMyPost = false }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLike = async () => {
+    requireAuth(async () => {
+      try {
+        const newLiked = !liked;
+        setLiked(newLiked);
+        setLocalLikesCount(prev => newLiked ? prev + 1 : Math.max(0, prev - 1));
+        
+        const response = await likePostAPI(post._id);
+        if (response.success) {
+          setLocalLikesCount(response.likesCount);
+          dispatch(updatePostInteraction({
+            postId: post._id,
+            updates: { likesCount: response.likesCount }
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to like post:', error);
+        setLiked(!liked);
+        setLocalLikesCount(post.likesCount || 0);
+      }
+    });
+  };
+
+  const handleComment = async (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+
+    requireAuth(async () => {
+      try {
+        const response = await commentPostAPI(post._id, commentText);
+        if (response.success) {
+          setLocalComments(prev => [...prev, response.comment]);
+          setLocalCommentsCount(response.commentsCount);
+          setCommentText('');
+          dispatch(updatePostInteraction({
+            postId: post._id,
+            updates: { 
+              comments: [...localComments, response.comment],
+              commentsCount: response.commentsCount 
+            }
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to comment:', error);
+        alert('Failed to post comment');
+      }
+    });
+  };
+
+  const handleSave = async () => {
+    requireAuth(async () => {
+      try {
+        const newSaved = !saved;
+        setSaved(newSaved);
+        
+        const response = await savePostAPI(post._id);
+        if (response.success) {
+          // Optionally show success message
+        }
+      } catch (error) {
+        console.error('Failed to save post:', error);
+        setSaved(!saved);
+      }
+    });
+  };
+
+  const handleShare = async () => {
+    requireAuth(async () => {
+      try {
+        // Copy link to clipboard
+        const postUrl = `${window.location.origin}/posts/${post._id}`;
+        await navigator.clipboard.writeText(postUrl);
+        
+        // Increment share count
+        const response = await sharePostAPI(post._id);
+        if (response.success) {
+          setLocalSharesCount(response.sharesCount);
+          dispatch(updatePostInteraction({
+            postId: post._id,
+            updates: { sharesCount: response.sharesCount }
+          }));
+          alert('Link copied to clipboard!');
+        }
+      } catch (error) {
+        console.error('Failed to share post:', error);
+        alert('Failed to share post');
+      }
+    });
+  };
+
+  // Helper to highlight @mentions
+  const highlightMentions = (text) => {
+    const parts = text.split(/(@\w+)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('@')) {
+        return (
+          <span key={index} className="text-orange-600 font-semibold">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
   };
 
   return (
@@ -171,27 +295,33 @@ const PostCard = ({ post, isMyPost = false }) => {
         )}
       </div>
 
-  <footer className="border-t border-black/5 bg-black/5 px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold text-black/50">
+  <footer className="border-t border-black/5 bg-black/5">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-black/50">
           <button
-            onClick={() => setLiked(!liked)}
+            onClick={handleLike}
             className={`inline-flex items-center gap-2 rounded-full px-4 py-2 transition ${
               liked ? 'bg-orange-500/10 text-orange-600' : 'hover:bg-black/5'
             }`}
           >
             <FaHeart className={liked ? 'text-orange-500' : ''} />
-            <span>Appreciate</span>
+            <span>{localLikesCount > 0 ? `${localLikesCount}` : 'Like'}</span>
           </button>
-          <button className="inline-flex items-center gap-2 rounded-full px-4 py-2 transition hover:bg-black/5">
+          <button 
+            onClick={() => setShowComments(!showComments)}
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 transition hover:bg-black/5"
+          >
             <FaComment />
-            <span>Discuss</span>
+            <span>{localCommentsCount > 0 ? `${localCommentsCount}` : 'Comment'}</span>
           </button>
-          <button className="inline-flex items-center gap-2 rounded-full px-4 py-2 transition hover:bg-black/5">
+          <button 
+            onClick={handleShare}
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 transition hover:bg-black/5"
+          >
             <FaShare />
-            <span>Share</span>
+            <span>{localSharesCount > 0 ? `${localSharesCount}` : 'Share'}</span>
           </button>
           <button
-            onClick={() => setSaved(!saved)}
+            onClick={handleSave}
             className={`inline-flex items-center gap-2 rounded-full px-3 py-2 transition ${
               saved ? 'bg-orange-500/10 text-orange-600' : 'hover:bg-black/5'
             }`}
@@ -200,6 +330,73 @@ const PostCard = ({ post, isMyPost = false }) => {
             <span className="hidden sm:inline">Save</span>
           </button>
         </div>
+
+        {/* Comments Section */}
+        {showComments && (
+          <div className="border-t border-black/5 bg-white px-6 py-4">
+            {/* Comment Input */}
+            {isAuthenticated ? (
+              <form onSubmit={handleComment} className="mb-4">
+                <textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Write a comment... (use @name to mention someone)"
+                  rows="2"
+                  className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm text-black/70 transition focus:border-orange-400 focus:shadow-[0_0_0_4px_rgba(255,107,44,0.18)] resize-none"
+                />
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={!commentText.trim()}
+                    className="rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Post
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="mb-4 rounded-2xl bg-orange-500/5 p-4 text-center">
+                <p className="text-sm text-black/60">
+                  <button 
+                    onClick={() => navigate('/sign-in')}
+                    className="font-semibold text-orange-600 hover:underline"
+                  >
+                    Sign in
+                  </button>
+                  {' '}to comment on this post
+                </p>
+              </div>
+            )}
+
+            {/* Comments List */}
+            <div className="space-y-4">
+              {localComments.length === 0 ? (
+                <p className="text-center text-sm text-black/40">No comments yet. Be the first!</p>
+              ) : (
+                localComments.map((comment, index) => (
+                  <div key={index} className="flex gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10 text-sm font-bold text-orange-600">
+                      {comment.userId?.name?.charAt(0).toUpperCase() || 'U'}
+                    </span>
+                    <div className="flex-1">
+                      <div className="rounded-2xl bg-black/5 px-4 py-3">
+                        <p className="text-sm font-semibold text-black">
+                          {comment.userId?.name || 'Unknown User'}
+                        </p>
+                        <p className="mt-1 text-sm text-black/70">
+                          {highlightMentions(comment.text)}
+                        </p>
+                      </div>
+                      <p className="mt-1 px-4 text-xs text-black/40">
+                        {formatDate(comment.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </footer>
     </article>
   );

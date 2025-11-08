@@ -50,8 +50,12 @@ export const createPost = async (postData) => {
   return response.data;
 };
 
-export const getAllPosts = async () => {
-  const response = await api.get('/posts');
+export const getAllPosts = async (limit = 10, cursor = null) => {
+  const params = { limit };
+  if (cursor) {
+    params.cursor = cursor;
+  }
+  const response = await api.get('/posts', { params });
   return response.data;
 };
 
@@ -72,6 +76,27 @@ export const updatePost = async (postId, postData) => {
 
 export const deletePost = async (postId) => {
   const response = await api.delete(`/posts/${postId}`);
+  return response.data;
+};
+
+// Interaction APIs
+export const likePost = async (postId) => {
+  const response = await api.post(`/posts/${postId}/like`);
+  return response.data;
+};
+
+export const commentPost = async (postId, text) => {
+  const response = await api.post(`/posts/${postId}/comment`, { text });
+  return response.data;
+};
+
+export const savePost = async (postId) => {
+  const response = await api.post(`/posts/${postId}/save`);
+  return response.data;
+};
+
+export const sharePost = async (postId) => {
+  const response = await api.post(`/posts/${postId}/share`);
   return response.data;
 };
 

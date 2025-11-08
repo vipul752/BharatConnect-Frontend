@@ -173,7 +173,7 @@ const SignUp = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="relative inline-flex items-center justify-center gap-2 px-[1.6rem] py-[0.85rem] rounded-[14px] font-bold text-white bg-gradient-to-[135deg] from-[#ff6b2c] to-[#d94a00] shadow-[0_18px_28px_rgba(255,107,44,0.26)] transition-transform hover:-translate-y-0.5 hover:shadow-[0_22px_40px_rgba(255,107,44,0.3)] w-full justify-center text-sm uppercase tracking-[0.25em] disabled:translate-y-0 disabled:opacity-50"
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-linear-to-r from-orange-500 via-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-200/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? 'Creating account...' : 'Join now'}
               </button>
